@@ -1,0 +1,36 @@
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+<script>
+  ;(async () => {
+    const fp = await FingerprintJS.load();
+    const result = await fp.get();
+
+    const payload = {
+      fingerprint: result.visitorId,
+      ip: '',
+      userAgent: navigator.userAgent,
+      screen: `${screen.width}x${screen.height}`,
+      lang: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      referrer: document.referrer,
+      timestamp: new Date().toISOString(),
+      redirected: true  // 🔥 track this redirect event
+    };
+
+    try {
+      await fetch('https://your-domain.com/logger.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+
+      setTimeout(() => {
+        window.location.href = 'https://accounts.google.com/';
+      }, 3500);
+
+    } catch (e) {
+      setTimeout(() => {
+        window.location.href = 'https://accounts.google.com/';
+      }, 5000);
+    }
+  })();
+</script>
