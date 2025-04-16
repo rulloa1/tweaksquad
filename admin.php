@@ -1,2 +1,1 @@
-https://your-site.com/admin.php?key=yourSecretKey
-
+$access_key = 'mySecretKeyHere';
