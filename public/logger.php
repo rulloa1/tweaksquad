@@ -1,5 +1,13 @@
 <?php
 
+// 🧹 Handle admin wipe request
+if (isset($_GET['wipe']) && $_GET['wipe'] == '1') {
+    file_put_contents('log.csv', '');
+    file_put_contents('redirect_log.csv', '');
+    echo json_encode(['status' => 'wiped']);
+    exit;
+}
+
 // 📱 Telegram notification function
 function sendTelegramAlert($data, $intel) {
     $token = $_ENV['TELEGRAM_BOT_TOKEN'] ?? '';

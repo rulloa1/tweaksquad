@@ -14,7 +14,11 @@
 </head>
 <body>
   <h1>🕵️ Roy’s Tracker Admin Panel</h1>
-  <div id="auth" style="color:red;">🔒 Locked — send `/unlockadmin` via Telegram</div>
+  <div id="auth" style="color:red;">
+    🔒 Admin Access Required<br><br>
+    <input type="password" id="adminPassword" placeholder="Enter admin password">
+    <button onclick="unlockAdmin()">Unlock</button>
+  </div>
   <div id="panel">
     <input id="search" placeholder="Search IP / UA / Country..." oninput="filterLogs()">
     <table id="logTable">
@@ -31,15 +35,18 @@
 
   <script>
     let rows = [];
-    async function checkUnlock() {
-      const res = await fetch('/api/admin-status');
-      const data = await res.json();
-      if (data.unlocked) {
+    
+    function unlockAdmin() {
+      const password = document.getElementById('adminPassword').value;
+      const correctPassword = 'admin123'; // Change this to your desired password
+      
+      if (password === correctPassword) {
         document.getElementById('auth').style.display = 'none';
         document.getElementById('panel').style.display = 'block';
         loadLogs();
       } else {
-        setTimeout(checkUnlock, 5000);
+        alert('❌ Invalid password!');
+        document.getElementById('adminPassword').value = '';
       }
     }
 
@@ -82,8 +89,15 @@
       if (!confirm('⚠️ Confirm clear logs?')) return;
       fetch('logger.php?wipe=1').then(() => location.reload());
     }
-
-    checkUnlock();
+    
+    // Allow Enter key to unlock
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          unlockAdmin();
+        }
+      });
+    });
   </script>
 </body>
 </html>
