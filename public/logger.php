@@ -1,5 +1,17 @@
 <?php
 
+// 🔄 Enable CORS and set proper headers
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 // 🧹 Handle admin wipe request
 if (isset($_GET['wipe']) && $_GET['wipe'] == '1') {
     file_put_contents('log.csv', '');
@@ -56,12 +68,34 @@ function fetchIntel($ip) {
 }
 
 // 🧠 Collect & enrich data
-$data = json_decode(file_get_contents('php://input'), true);
-$data['ip'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-$data['agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-$data['logged_at'] = date("Y-m-d H:i:s");
-$redirected = $data['redirected'] ?? false;
-$intel = fetchIntel($data['ip']);
+try {
+    $raw_input = file_get_contents('php://input');
+    
+    if (empty($raw_input)) {
+        echo json_encode(['status' => 'error', 'message' => 'No data received']);
+        exit;
+    }
+    
+    $data = json_decode($raw_input, true);
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid JSON: ' . json_last_error_msg()]);
+        exit;
+    }
+    
+    if (!$data || !isset($data['fingerprint'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
+        exit;
+    }
+    
+    // Enrich with server data
+    $data['ip'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $data['agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+    $data['logged_at'] = date("Y-m-d H:i:s");
+    $redirected = $data['redirected'] ?? false;
+    
+    // Get IP intelligence
+    $intel = fetchIntel($data['ip']);
 
 // 💾 Log everything to log.csv
 $f1 = fopen("log.csv", "a");
@@ -99,4 +133,17 @@ if ($redirected) {
     fclose($f2);
 }
 
-echo json_encode(['status' => 'logged']);
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Data logged successfully',
+        'fingerprint' => $data['fingerprint'],
+        'ip' => $data['ip'],
+        'timestamp' => $data['logged_at']
+    ]);
+    
+} catch (Exception $e) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Server error: ' . $e->getMessage()
+    ]);
+}
